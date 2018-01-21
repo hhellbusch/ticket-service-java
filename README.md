@@ -29,3 +29,6 @@ Report will be openable with a web browser from ```build/reports/coverage/index.
 
 ## Notes
 
+Assumed no persistence - all data is managed in memory.
+
+If runtime aborts, data is lost.

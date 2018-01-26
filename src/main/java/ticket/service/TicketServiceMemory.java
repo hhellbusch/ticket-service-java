@@ -52,6 +52,7 @@ public class TicketServiceMemory implements TicketService
 		return this.venue.getAvailSeatCount();
 	}
 
+	
 	@Override
 	public SeatHold findAndHoldSeats(int numSeats, String customerEmail) {
 		int availCount = this.numSeatsAvailable();
@@ -59,8 +60,12 @@ public class TicketServiceMemory implements TicketService
 		try {
 			seatHold = this.venue.findSeats(numSeats);
 		} catch (RequestedSeatsNotAvailableException e) {
-			//caatch !
+			String msg = "Seats that customer " + customerEmail
+				+" requested are not available. Requested " + numSeats + " seats."
+				+ " AvailCount: " + availCount;
+			logger.debug(msg);
 		}
+		//if the seatHold is still null after trying to get a hold; return NULL
 		if (seatHold == null) {
 			return seatHold;
 		}
@@ -85,6 +90,10 @@ public class TicketServiceMemory implements TicketService
 			return null;
 		}
 
+		// tell the venue that the seats are reserved now
+		int seatCount = seatHold.getSeatCount();
+		this.venue.reserveSeats(seatCount);
+
 		String bookingCode = UUID.randomUUID().toString();
 		seatHold.setBookingTime(Instant.now());
 		seatHold.setBookingCode(bookingCode);
@@ -95,8 +104,7 @@ public class TicketServiceMemory implements TicketService
 		return bookingCode;
 	}
 
-	private void removeExpiredSeats()
-	{
+	private void removeExpiredSeats() {
 		Instant now = Instant.now();
 		logger.debug("Checking for seats that are expired at or before " + now);
 		logger.debug("Expire offset " + this.expireTimeSeconds);
@@ -113,17 +121,24 @@ public class TicketServiceMemory implements TicketService
 			logger.debug("Expire time - " + expireTime);
 			logger.debug("Comparison Result " + comparison);
 
-			if (comparison < 0)
-			{
+			if (comparison < 0) {
 				//add to delete list
 				expiredSeatHolds.add(seatHold);
 			}
 		});
 		logger.debug("Removing " + expiredSeatHolds.size());
 
-		for(SeatHold seatHold : expiredSeatHolds)
-		{
-			this.venue.freeHeldSeats(seatHold.getSeatCount());
+		for(SeatHold seatHold : expiredSeatHolds) {
+			int seatCount = seatHold.getSeatCount();
+			try {
+				this.venue.freeHeldSeats(seatCount);
+			} catch (UnableToFreeSeatsException e) {
+				// this should not occur; if it does - there's a bug / design flaw
+				String msg = "FATAL - Asked to free " + seatCount 
+					+ " UnableToFreeSeatsException occured. Exception message: " 
+					+ e.getMessage();
+				logger.error(msg);
+			}
 			this.heldSeats.remove(seatHold.getId());
 		}
 	}

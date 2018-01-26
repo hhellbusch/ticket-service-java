@@ -1,6 +1,7 @@
 package ticket.common.entity;
 
 import ticket.exception.RequestedSeatsNotAvailableException;
+import ticket.exception.UnableToFreeSeatsException;
 
 /**
  * Describes the venue - e.g. number of rows and columns
@@ -15,25 +16,17 @@ public class Venue
 	private int reservedCount = 0;
 	private int holdCount = 0;
 
+	private int totalSeatCount;
 
 	public Venue(int rows, int cols) {
 		this.rows = rows;
 		this.cols = cols;
-	}
-
-	public int getRowCount()
-	{
-		return this.rows;
-	}
-
-	public int getColCount()
-	{
-		return this.cols;
+		this.totalSeatCount = this.rows * this.cols;
 	}
 
 	public int getTotalSeatCount()
 	{
-		return this.rows * this.cols;
+		return this.totalSeatCount;
 	}
 
 	public synchronized int getAvailSeatCount()
@@ -64,12 +57,22 @@ public class Venue
 		return seatHold;
 	}
 
-	public synchronized void reserveSeats(int numSeats) {
-		this.freeHeldSeats(numSeats);
+	public synchronized void reserveSeats(int numSeats)  {
+		try {
+			this.freeHeldSeats(numSeats);
+		} catch (UnableToFreeSeatsException e) {
+			
+		}
 		this.reservedCount += numSeats;
 	}
 
-	public synchronized void freeHeldSeats(int numSeats) {
+	public synchronized void freeHeldSeats(int numSeats) throws UnableToFreeSeatsException {
+		int totalIfFreed = this.getAvailSeatCount() + numSeats;
+		if (totalIfFreed > this.getTotalSeatCount()) {
+			String msg = "Unable to free " + numSeats 
+				+ " seats.  There are not enough seats in the venue.";
+			throw new UnableToFreeSeatsException(msg);
+		}
 		this.holdCount -= numSeats;
 	}
 }

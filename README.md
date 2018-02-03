@@ -18,6 +18,9 @@ $ gradle build
 $ gradle test
 ```
 
+Report will be openable witha web browser from ```build/reports/tests/test/index.html```
+
+
 To generate a coverage report with jacoco - 
 ```
 $  gradle test jacocoTestReport

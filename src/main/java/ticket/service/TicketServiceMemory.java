@@ -5,6 +5,8 @@ import ticket.common.entity.SeatHold;
 import ticket.common.entity.Venue;
 import ticket.collection.CustomerCollection;
 import ticket.exception.RequestedSeatsNotAvailableException;
+import ticket.exception.UnableToFreeSeatsException;
+import ticket.exception.UnableToReserveSeatsException;
 import java.util.UUID;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -86,13 +88,17 @@ public class TicketServiceMemory implements TicketService
 	{
 		this.removeExpiredSeats();
 		SeatHold seatHold = this.heldSeats.get(seatHoldId);
-		if (seatHold == null) {
-			return null;
-		}
 
 		// tell the venue that the seats are reserved now
 		int seatCount = seatHold.getSeatCount();
-		this.venue.reserveSeats(seatCount);
+		try {
+			this.venue.reserveSeats(seatCount);
+		} catch (UnableToReserveSeatsException e) {
+			logger.debug(e.getMessage());
+		}
+		if (seatHold == null) {
+			return null;
+		}
 
 		String bookingCode = UUID.randomUUID().toString();
 		seatHold.setBookingTime(Instant.now());

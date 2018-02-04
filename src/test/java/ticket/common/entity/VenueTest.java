@@ -4,7 +4,16 @@ import org.junit.*;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
+import ticket.exception.UnableToReserveSeatsException;
+import ticket.exception.UnableToFreeSeatsException;
+import ticket.exception.RequestedSeatsNotAvailableException;
 
+/**
+ * Tests the functionality of the Venue entity
+ *
+ * @author Henry Hellbusch
+ * @since 2018.01.31
+ */
 public class VenueTest 
 {
 
@@ -57,8 +66,12 @@ public class VenueTest
 	{
 		int totalSeats = this.rows * this.cols;
 		int numToHold = 10;
-		this.subject.findSeats(numToHold);
-		int availSeats = this.getAvailSeatCount();
+		try {
+			this.subject.findSeats(numToHold);
+		} catch (Exception e) {
+			fail("unexpected exception thrown message:" + e.getMessage());
+		}
+		int availSeats = this.subject.getAvailSeatCount();
 		int expectedSeats = totalSeats - numToHold;
 
 		String msg = "Total available seats should be equal to totalSeatCount - numHeld";
@@ -66,25 +79,110 @@ public class VenueTest
 	}
 
 	@Test 
-	public void testGetAvailSeatCountWithReservedSeats()
+	public void testReserveSeatsThrowsExceptionWhenNoSeatsWereHeldFirst()
 	{
 		int totalSeats = this.rows * this.cols;
 		int numToReserve = 3;
-		this.subject.reserveSeats(numToHold);
-		int availSeats = this.getAvailSeatCount();
+		try {
+			this.subject.reserveSeats(numToReserve);
+			fail ("expected exception message to be thrown because seats were not held prior");
+		} catch (UnableToReserveSeatsException e) {
+			// if code executes we received the expected exception pass
+			assertTrue(true);
+		}
+	}
+
+	@Test
+	public void testGetAvailWithReservedSeats()
+	{
+		int totalSeats = this.rows * this.cols;
+		int numToReserve = 4;
 		int expectedSeats = totalSeats - numToReserve;
+
+		//get a seat hold
+		try {
+			this.subject.findSeats(numToReserve);
+			this.subject.reserveSeats(numToReserve);
+		} catch (Exception e) {
+			fail("unexpected exception thrown message:" + e.getMessage());
+		}
+		int availSeats = this.subject.getAvailSeatCount();
 
 		String msg = "Total available seats should be equal to totalSeatCount - numHeld";
 		assertEquals(msg, expectedSeats, availSeats);
 	}
 
-	// @Test
-	// public void testGetAvailSeatCountWithHoldAndReservedSeats()
-	// {
-		
-	// }
+	@Test
+	public void testGetAvailSeatCountWithHoldAndReservedSeats()
+	{
+		int totalSeats = this.rows * this.cols;
+		int numToReserve = 4;
+		int numToHold = 4;
+		int expectedSeats = totalSeats - numToReserve - numToHold;
 
-	//TODO test for findSeats throws exception
-	//TODO test for freeHeldSeats throws exception
+		//get a seat hold
+		try {
+			this.subject.findSeats(numToReserve);
+			this.subject.reserveSeats(numToReserve);
+			this.subject.findSeats(numToHold);
+		} catch (Exception e) {
+			fail("unexpected exception thrown message:" + e.getMessage());
+		}
+		int availSeats = this.subject.getAvailSeatCount();
+
+		String msg = "Total available seats should be equal to totalSeatCount - numHeld";
+		assertEquals(msg, expectedSeats, availSeats);
+	}
+
+	@Test
+	public void testGetAvailSeatCountWithHeldAndFreedSeats()
+	{
+		int totalSeats = this.rows * this.cols;
+		
+		int numToHold = 4;
+		int numToFree = 2;
+		int expectedSeats = totalSeats - numToHold + numToFree;
+
+		//get a seat hold
+		try {
+			this.subject.findSeats(numToHold);
+			this.subject.freeHeldSeats(numToFree);
+		} catch (Exception e) {
+			fail("unexpected exception thrown message:" + e.getMessage());
+		}
+		int availSeats = this.subject.getAvailSeatCount();
+
+		String msg = "Total available seats should be equal to totalSeatCount - numHeld";
+		assertEquals(msg, expectedSeats, availSeats);
+	}
+
+	@Test
+	public void testFreeHeldSeatsCreatesTooBigOfVenue()
+	{
+		// should not be able to free more seats than physically availble
+		int numToFree = 4;
+		try {
+			this.subject.freeHeldSeats(numToFree);
+			fail ("expected exception message to be thrown because seats were not held prior");
+		} catch (UnableToFreeSeatsException e) {
+			//exception was thrown due to no seats being held prior
+			assertTrue(true);
+		}
+	}
+
+
+	@Test
+	public void testUnableToHoldMoreSeatsThanAvailable()
+	{
+		// should not be able to free more seats than physically availble
+		int numToFind = this.rows * this.cols + 10;
+		try {
+			this.subject.findSeats(numToFind);
+			fail ("expected exception message to be thrown because requested seats are not available");
+		} catch (RequestedSeatsNotAvailableException e) {
+			//exception was thrown due to no seats being held prior
+			assertTrue(true);
+		}
+	}
 
 }

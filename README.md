@@ -26,7 +26,7 @@ To generate a coverage report with jacoco -
 $  gradle test jacocoTestReport
 ```
 
-Report will be openable with a web browser from ```build/reports/coverage/index.html```
+Report will be openable with a web browser from ```build/reports/jacoco/test/html/index.html```
 
 (Report output location controlled by gradle.build)
 

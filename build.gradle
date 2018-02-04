@@ -42,6 +42,10 @@ jacocoTestReport {
     reports {
         xml.enabled true
         csv.enabled false
-        html.destination "${buildDir}/reports/coverage"
     }
+}
+
+test {
+    //toggle for showing application logging
+   // testLogging.showStandardStreams = true
 }
